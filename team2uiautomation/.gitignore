@@ -1,0 +1,8 @@
+jmeter.log
+results/
+api-automation/html_report/
+html_report/
+*.jtl
+
+# Local-only DB connection string for state verification (contains credential)
+api-automation/test-data/mongo.properties

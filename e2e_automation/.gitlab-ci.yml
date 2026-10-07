@@ -1,0 +1,161 @@
+# ==========================================
+# GLOBAL SETTINGS
+# initilize rule for the workflow
+# ==========================================
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables: { CACHE_POLICY: pull }
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never # avoid duplicate pipeline running
+    - if: $CI_COMMIT_BRANCH == "main"
+      variables: { CACHE_POLICY: pull-push }
+    - if: $CI_COMMIT_BRANCH
+      variables: { CACHE_POLICY: pull }
+
+stages: # 3 stages
+  - ui_api_smoke
+  - trigger_jmeter_api_tests
+  - K6_performance
+  - ui_regression
+
+default:
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  tags: [qa-automation]
+  artifacts:
+    when: always
+    paths:
+      - TestResults/
+      - "**/TestReports/" # HTML live here
+    expire_in: 1 week
+    reports:
+      junit: TestResults/*.xml # This restores GitLab's native test UI
+  cache:
+    key:
+      files: [Team2QA.Automation.Tests/Team2QA.Automation.Tests.csproj]
+    paths: [.nuget/packages/]
+    policy: pull-push
+
+variables:
+  Browser__RunRemote: "true"
+  Browser__Headless: "true"
+  NUGET_PACKAGES: "$CI_PROJECT_DIR/.nuget/packages"
+  Admin__Username: "$CI_ADMIN_USERNAME"
+  Admin__Password: "$CI_ADMIN_PASSWORD"
+
+  # UI-Interactive Variables
+  TEST_SCOPE:
+    value: "regression"
+    options:
+      - "regression"
+      - "smoke"
+      - "DepositTest"
+      - "RegisterLoginTest"
+      - "RequestApproveTest"
+      - "TransferTest"
+      - "WithdrawTest"
+    description: "Select the test scope to execute"
+
+  TEST_WORKERS:
+    value: "2"
+    options:
+      - "1"
+      - "2"
+      - "4"
+      - "6"
+    description: "Select the number of parallel test workers"
+
+# ==========================================
+# STAGE 1: UI SMOKE
+# ==========================================
+smoke_ui_chrome:
+  stage: ui_api_smoke
+  rules:
+    - when: never
+  services:
+    - name: selenium/standalone-chrome:latest
+      alias: selenium-chrome
+  variables:
+    Browser__Type: "chrome"
+    Browser__RemoteUrl: "http://selenium-chrome:4444/"
+  script:
+    - echo "Running UI Smoke tests on Chrome"
+    - dotnet test Team2QA.Automation.Tests/Team2QA.Automation.Tests.csproj --filter "Category=Smoke" --logger "junit;LogFileName=smoke-chrome.xml" --results-directory ./TestResults -- NUnit.NumberOfTestWorkers=$TEST_WORKERS
+
+# ==========================================
+# STAGE 2: TRIGGER API
+# ==========================================
+trigger_jmeter_api_tests:
+  stage: trigger_jmeter_api_tests
+  rules:
+    - when: never
+  trigger:
+    project: class/hcm26_fr_aut_01/team2/team2mockproject/team2uiautomation
+    branch: main
+    strategy: depend
+
+# ==========================================
+# STAGE 3: K6 Performance
+# ==========================================
+K6_performance:
+  stage: K6_performance
+  image:
+    name: grafana/k6:latest
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: "$CI_COMMIT_BRANCH"
+      when: on_success
+      allow_failure: true
+  variables:
+    # Pass environment variables to the k6 script
+    BASE_URL: "https://v3.thuvienfpt.com"
+    APP_USERNAME: "$CI_APP_USERNAME"
+    PASSWORD: "$CI_APP_PASSWORD"
+  script:
+    - echo "Running k6 performance tests..."
+    - mkdir -p performance/TestReports
+    - k6 run performance/tests/transfer-test.js
+
+# ==========================================
+# STAGE 4: UI REGRESSION
+# ==========================================
+regression_ui_all_browsers:
+  stage: ui_regression
+  parallel:
+    matrix:
+      - BROWSER_NAME: ["chrome", "edge"]
+  services:
+    - name: selenium/standalone-${BROWSER_NAME}:latest
+      # container talk through this DNS
+      alias: selenium-${BROWSER_NAME}
+  variables:
+    Browser__Type: "${BROWSER_NAME}"
+    Browser__RemoteUrl: "http://selenium-${BROWSER_NAME}:4444/"
+  rules:
+    - when: never
+    # # 1. Skip entirely if the user selects strictly "smoke"
+    # - if: '$TEST_SCOPE == "smoke"'
+    #   when: never
+    # # 2. Auto-run for Merge Requests
+    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    #   when: on_success
+    # # 3. Auto-run if triggered manually via the UI with a specific class name
+    # - if: '$TEST_SCOPE != "regression"'
+    #   when: on_success
+    # # 4. Make it a manual play button on standard branch pushes
+    # - if: '$CI_COMMIT_BRANCH'
+    #   when: manual
+    #   allow_failure: true
+  script:
+    - |
+      while ! curl -s http://selenium-${BROWSER_NAME}:4444/status | grep -q '"ready": true'; do sleep 5; done
+    - echo "Executing scope - ${TEST_SCOPE} for ${BROWSER_NAME}..."
+    - |
+      if [ "$TEST_SCOPE" == "regression" ]; then
+        FILTER="Category=Regression"
+      else
+        FILTER="FullyQualifiedName~${TEST_SCOPE}"
+      fi
+    - dotnet test Team2QA.Automation.Tests/Team2QA.Automation.Tests.csproj --filter "$FILTER" --logger "junit;LogFileName=${TEST_SCOPE}-${BROWSER_NAME}.xml" --results-directory ./TestResults -- NUnit.NumberOfTestWorkers=$TEST_WORKERS

@@ -1,0 +1,43 @@
+bin/
+obj/
+
+Tests/*.html
+TestReports/Screenshots/
+Tests/E2E_TEST_REPORT_TEAM2.html
+TestResults/
+TestReports/
+*.trx
+
+.vs/
+.idea/
+*.user
+
+.DS_Store
+
+# .NET Core / C# Build Folders
+bin/
+obj/
+
+# Test Results
+TestResults/
+*.trx
+*.xml
+*.html
+*.log
+
+# Visual Studio / VS Code Settings
+.idea/
+.vscode/
+*.suo
+*.user
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Environment Variables / Secrets (Never push passwords!)
+.env
+appsettings.local.json
+
+#AI File
+GEMINI.md

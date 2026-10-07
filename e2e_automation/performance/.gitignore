@@ -1,0 +1,22 @@
+# Dependency directories
+node_modules/
+
+# Test reports and summaries
+TestReports/
+*.html
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS / IDE files
+.DS_Store
+.vscode/
+.idea/

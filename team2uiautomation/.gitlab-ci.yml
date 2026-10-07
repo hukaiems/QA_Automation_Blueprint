@@ -1,0 +1,79 @@
+spec:
+  inputs:
+    # 0. Test Strategy Selection (Grafana Tag)
+    test_strategy:
+      description: "Select the type of test to execute"
+      type: string
+      default: "api_regression"
+      options:
+        - "api_regression"
+        - "load_test"
+        - "stress_test"
+        - "soak_test"
+
+    # 1. Number of Threads (CCU)
+    ccu_login_register:
+      type: number
+      default: 1
+    ccu_request:
+      type: number
+      default: 1
+    ccu_deposit_withdraw:
+      type: number
+      default: 1
+    ccu_transfer:
+      type: number
+      default: 1
+
+    # 2. Ramp-up Period (Seconds)
+    rampup_login_register:
+      type: number
+      default: 1
+    rampup_request:
+      type: number
+      default: 1
+    rampup_deposit_withdraw:
+      type: number
+      default: 1
+    rampup_transfer:
+      type: number
+      default: 1
+
+    # 3. Duration (Seconds)
+    duration_login_register:
+      type: number
+      default: 300
+    duration_request:
+      type: number
+      default: 300
+    duration_deposit_withdraw:
+      type: number
+      default: 300
+    duration_transfer:
+      type: number
+      default: 300
+
+---
+include:
+  - local: 'templates/jmeter-test.yml'
+    inputs:
+      # Pass Test Strategy
+      test_strategy: $[[ inputs.test_strategy ]]
+      
+      # Pass CCU
+      ccu_login_register: $[[ inputs.ccu_login_register ]]
+      ccu_request: $[[ inputs.ccu_request ]]
+      ccu_deposit_withdraw: $[[ inputs.ccu_deposit_withdraw ]]
+      ccu_transfer: $[[ inputs.ccu_transfer ]]
+
+      # Pass Ramp-up
+      rampup_login_register: $[[ inputs.rampup_login_register ]]
+      rampup_request: $[[ inputs.rampup_request ]]
+      rampup_deposit_withdraw: $[[ inputs.rampup_deposit_withdraw ]]
+      rampup_transfer: $[[ inputs.rampup_transfer ]]
+
+      # Pass Duration
+      duration_login_register: $[[ inputs.duration_login_register ]]
+      duration_request: $[[ inputs.duration_request ]]
+      duration_deposit_withdraw: $[[ inputs.duration_deposit_withdraw ]]
+      duration_transfer: $[[ inputs.duration_transfer ]]

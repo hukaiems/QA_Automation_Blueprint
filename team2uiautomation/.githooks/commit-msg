@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Read the commit message file
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Define the regex pattern for Conventional Commits
+# Format: type(optional-scope): description
+# Types allowed: feat, fix, chore, docs, hotfix, bugfix, refactor
+PATTERN="^(feat|fix|chore|docs|hotfix|bugfix|refactor|test|ci)(\([a-zA-Z0-9_-]+\))?: .+$"
+
+# Check if the commit message matches the pattern
+if [[ ! $COMMIT_MSG =~ $PATTERN ]]; then
+    # Print red error message
+    echo -e "\033[1;31m[ERROR] Invalid commit message format!\033[0m"
+    echo -e "Your commit message was: \033[33m\"$COMMIT_MSG\"\033[0m"
+    echo ""
+    echo -e "\033[1;32mGood Examples:\033[0m"
+    echo "  feat: add login page object model"
+    echo "  fix(login): update submit button xpath"
+    echo "  chore: update gitignore for TestResults"
+    echo "  docs: update readme instructions"
+    echo ""
+    echo -e "\033[1;31mPlease use one of the accepted prefixes: feat, fix, chore, docs, hotfix, bugfix, refactor, test, ci\033[0m"
+    echo ""
+    
+    # Block the commit
+    exit 1
+fi
+
+# Allow the commit
+exit 0

@@ -1,0 +1,41 @@
+stages:
+  - deploy_infra
+
+deploy_all_infra:
+  stage: deploy_infra
+  image: alpine:latest
+  tags:
+    - qa-automation
+  # setting up SSH key
+  before_script:
+    # Install openssh-client and rsync for efficient directory copying
+    - apk update && apk add --no-cache openssh-client rsync
+    # background helper keep SSH private in mem, eval to run
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    # configure ssh to ignore checking server host keys, so script wont freeze asking for manual confirmation
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+  script:
+    - echo "Creating deployment root on VPS..."
+    - ssh nguyen@${VPS_IP} "mkdir -p /home/nguyen/app/infra"
+
+    - echo "Syncing repository files to VPS..."
+    # rsync: copy over ssh, only copy changed files, -a -> archive, -v -> verbose, -z -> compress
+    - rsync -avz --exclude='.git' --exclude='.gitlab-ci.yml' ./ nguyen@${VPS_IP}:/home/nguyen/app/infra/
+
+    - echo "Deploying Docker Compose stacks..."
+    - |
+      ssh nguyen@${VPS_IP} "
+        cd /home/nguyen/app/infra &&
+        for dir in observability triage; do
+          if [ -d \"\$dir\" ]; then
+            echo \"---> Deploying stack: \$dir <---\"
+            (cd \"\$dir\" && docker compose -p nguyen_\$dir up -d --remove-orphans)
+          fi
+        done
+      "
+
+# check if it ready or not ?

@@ -1,0 +1,14 @@
+[
+    {
+        "senderId": "202511811748",
+        "recipientId": "202511811639",
+        "balanceTransfered": "50.00",
+        "password": "Useruseruser1!"
+    },
+    {
+        "senderId": "202511811639",
+        "recipientId": "202511811748",
+        "balanceTransfered": "50.00",
+        "password": "Useruseruser1!"
+    }
+]
