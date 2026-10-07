@@ -1,0 +1,48 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
+
+# Environment and Secrets (Keys, Passwords, Web URLs usually live here)
+.env
+.env.*
+*.local
+*secret*
+*password*
+*credentials*
+mongo.properties
+appsettings.json
+appsettings.Development.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.user
+TestResults/
+*.cache
+
+# Test Reports and Data (Might contain sensitive mock data)
+TestReports/
+results/
+*.csv
+*.jtl
+*.html
+
+# Logs
+*.log
+
